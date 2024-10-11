@@ -1,5 +1,5 @@
 #17.07.23 envio semanal de clas mercadologica para scanntech
-#contato jsantos@scanntech.com - email 
+#https://scanntech.cloud.xwiki.com/xwiki/wiki/di/view/apis/api-products/operations/products-classifications/
 
 import cx_Oracle
 import os
@@ -7,65 +7,63 @@ from datetime import datetime,timedelta
 import requests
 import json
 import concurrent.futures
+from dotenv import load_dotenv 
+load_dotenv() 
+import logging
 
 iAMBIENTE_SCANTECH = "prd"
+iPASS_BDORA = os.getenv("iORA_PASS") 
+iUSER_BDORA = os.getenv("iORA_USER") 
+iHOST_BDORA = os.getenv("iORA_HOST") 
+max_threads = 5 #envio de threads, maximo de threads simultaneas
 
 if iAMBIENTE_SCANTECH == "qas":
-    iCOMPANY_CODE = "358"
-    iTOKEN = "ZGktZGF2by1sa2oxOiZjJThCM29K" #user: di-davo-lkj1   |    senha: &c%8B3oJ
-    iURL_BASE = "https://test-parceiro.scanntech.com/api-mercado/api-mercado/api/v1"  
+    iCOMPANY_CODE = os.getenv("iSCAN_COMPANYCODE_HML") 
+    iTOKEN = os.getenv("iSCAN_TOKEN_HML") 
+    iURL_BASE = os.getenv("iSCAN_BASEURL_CLASSMERC_HML") 
+    iSCAN_NUMREDEARVMERC = os.getenv("iSCAN_NUMREDE_ARVMERCADOLOGICA") 
 else:
-    iCOMPANY_CODE = "328"
-    iTOKEN = "ZGktZGF2by01ZmsyOiNmMS1FMWhM" #user: di-davo-5fk2   |    senha: #f1-E1hL
-    iURL_BASE = "http://parceiro.scanntech.com/api-mercado/api-mercado/api/v1" 
+    iCOMPANY_CODE = os.getenv("iSCAN_COMPANYCODE_PRD") 
+    iTOKEN = os.getenv("iSCAN_TOKEN_PRD") 
+    iURL_BASE = os.getenv("iSCAN_BASEURL_CLASSMERC_PRD") 
+    iSCAN_NUMREDEARVMERC = os.getenv("iSCAN_NUMREDE_ARVMERCADOLOGICA") 
 
-    
 
-#LOG
-iFORMATNAMELOG = datetime.now().strftime('%Y_%m_%d')
-iNAMEARQLOG = "_Integra_Scantech_ClasMerc"
-iSTATUSLOG = 2 #2=Gera log FULL     1=gera log de erros e avisos        0=nao gera
-
-#diretorios
-if os.name == 'nt': #windows
-    dirLOGREQUEST = "//nas/dbxprd/PRD/LOG/SCANTECH/"   
+if os.name == 'nt': 
+    dirLOGREQUEST = os.getenv("iDIRLOG_WIN") 
     iPRINT_ACOMPANHAMENTO = "S" 
     iPRINT_LOG = "S"
 else:
-    os.environ['ORACLE_HOME'] = "/usr/lib/oracle/19.6/client64"    
-    dirLOGREQUEST = "//dbx/PRD/LOG/SCANTECH/"
+    os.environ['ORACLE_HOME'] =   os.getenv("iORACLEHOME_LINUX") 
+    dirLOGREQUEST = os.getenv("iDIRLOG_LINUX") 
     iPRINT_ACOMPANHAMENTO = "N"
     iPRINT_LOG = "S"
+iNAMEARQLOG = os.getenv("iNOMEARQLOG_CADCLASSMERC") 
+iEXTENSAO_LOG = os.getenv("iEXTENSAO_LOG") 
+logging.basicConfig(
+    filename=f"{dirLOGREQUEST}{iNAMEARQLOG}_{datetime.now().strftime('%d%m%Y')}{iEXTENSAO_LOG}",  # Nome do arquivo de log
+    format='%(asctime)s - [PID:%(process)d] -  %(levelname)s - %(funcName)s - %(message)s ',  # Formato da mensagem de log
+    level=logging.DEBUG  # Nivel minimo de log que sera registrado
+)
+
 
 #Conexao Oracle
 try:    
-    myCONNORA = cx_Oracle.connect('davo/d4v0@davoprd') #conexao com o Oracle
+    myCONNORA = cx_Oracle.connect(f"{iUSER_BDORA}/{iPASS_BDORA}@{iHOST_BDORA}") 
     myCONNORA.autocommit = True
     curORA = myCONNORA.cursor() #execucoes Oracle
     try:
         curORA.execute("ALTER SESSION SET NLS_NUMERIC_CHARACTERS= ',.' ")
         curORA.execute("alter session set nls_date_format = 'DD/MM/YYYY'")    
     except cx_Oracle.DatabaseError as e_sql: 
-        print("Erro : " + str(e_sql))
-except:
-    print("Erro ao comunicar com Oracle em: " + str(iFORMATNAMELOG))
+        logging.error(f"{e_sql}")
+except Exception as e:
+    logging.error(f"{e}")
+    print(f"{e}")
     exit()
-    pass
 
-
-#GeraLog
-def gera_Log(iTEXTOLOG): 
-    data_hora_atual = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  
-    try:
-        arquivo = open(dirLOGREQUEST + str(iFORMATNAMELOG) + iNAMEARQLOG  +  '.log', 'a')
-        arquivo.writelines(iTEXTOLOG + " \n | " + data_hora_atual + '\n')
-        arquivo.close()
-    except IndexError:        
-        arquivo.close()
-        print ("Erro ao criar arquivo txt em: " + str(dirLOGREQUEST) + str(iNAMEARQLOG) + ".log")
-
-# Funcao para capturar informacoes das classificacoes mercadologicas
 def captaINF_CLASS():
+    logging.info(f"Funcao, para capturar informacoes das classificacoes mercadologicas")
     iQUERY = ("""
                 SELECT 
                 E.EAN_COD_EAN
@@ -126,7 +124,7 @@ def captaINF_CLASS():
                     AND I.Git_Estq_Atual > 0
                     AND I.GIT_DEPTO IN (1, 2, 3)
               """)
-    gera_Log("iQUERY: " + str(iQUERY))
+    logging.debug(f"{iQUERY}")
     iLISTA_ITENS = []    
     for iITEMS in curORA.execute(iQUERY).fetchall():
         try:
@@ -134,11 +132,14 @@ def captaINF_CLASS():
                                   iITEMS[7], iITEMS[8], iITEMS[9], iITEMS[10], iITEMS[11],))
         except:
             return iLISTA_ITENS
+    logging.debug(f"Total de registros: {len(iLISTA_ITENS)}")
     return iLISTA_ITENS
 
-# Funcao para enviar informacoes para a Scanntech
+
 def enviaSCANNTECH(iEAN, iCOD, iCOMPR, iDESC, iMARCA, iFABR, iCONT, iNIV1, iNIV2, iNIV3, iNIV4, iNIV5, iCONTADOR):
-    url = iURL_BASE + "/redes/328/estructuramercadologica/"
+    logging.info(f"Funcao,  para enviar informacoes para a Scanntech")
+    url =  f"{iURL_BASE}/redes/{iSCAN_NUMREDEARVMERC}/estructuramercadologica/"
+    print(url)
     payload = json.dumps({
                             "barra": str(iEAN),
                             "codigoInterno": str(iCOD),
@@ -158,36 +159,32 @@ def enviaSCANNTECH(iEAN, iCOD, iCOMPR, iDESC, iMARCA, iFABR, iCONT, iNIV1, iNIV2
                 'Content-Type': 'application/json',
                 'Authorization': 'Basic ' + str(iTOKEN)
                 }
-    gera_Log("contador=" + str(iCONTADOR) + " " + "url: " + str(url))
-    gera_Log("contador=" + str(iCONTADOR) + " " + "headers: " + str(headers))
-    gera_Log("contador=" + str(iCONTADOR) + " " + "payload: " + str(payload))
-    response = requests.request("POST", url, headers=headers, data=payload)
-    gera_Log("contador=" + str(iCONTADOR) + " " + "response.status_code: " + str(response.status_code))
-    gera_Log("contador=" + str(iCONTADOR) + " " + "response.text: " + str(response.text))
-
-## Funcao para gerar o envio da classe mercadologica                                
-#def geraENVIO_CLASMERC():   
-#    iLISTA_ITENSCLASS = captaINF_CLASS()
-#    iTOTAL_ITENS = len(iLISTA_ITENSCLASS)
-#    iCONTADOR = 1
-#    for itens in iLISTA_ITENSCLASS:
-#        gera_Log(f"Enviando: {iCONTADOR} de {iTOTAL_ITENS} ")
-#        enviaSCANNTECH(itens[0], itens[1], itens[2], itens[3], itens[4], itens[5], itens[6], itens[7], 
-#                       itens[8], itens[9], itens[10], itens[11])
-#        iCONTADOR += 1
+    logging.debug(f"contador={iCONTADOR} url: {url}")
+    logging.debug(f"contador={iCONTADOR} headers: {headers}")
+    logging.debug(f"contador={iCONTADOR} payload: {headers}")
+    try:
+        response = requests.request("POST", url, headers=headers, data=payload)
+        if response.status_code != 200:
+            logging.debug(f"contador={iCONTADOR} url: {url}")
+            logging.debug(f"contador={iCONTADOR} headers: {headers}")
+            logging.debug(f"contador={iCONTADOR} payload: {payload}")
+            logging.debug(f"contador={iCONTADOR} response.status_code: {response.status_code}")
+            logging.debug(f"contador={iCONTADOR} response.text: {response.text}")
+        else:
+            logging.debug(f"contador={iCONTADOR} payload: {payload}")
+            logging.debug(f"contador={iCONTADOR} response.text: {response.text}")
+            logging.debug(f"contador={iCONTADOR} response.status_code: {response.status_code}")
+    except Exception as e:
+        logging.error(f"{e}")    
 
 def geraENVIO_CLASMERC():
-    iLISTA_ITENSCLASS = captaINF_CLASS()
-
-    # Limita o numero maximo de threads concorrentes para 5
-    max_threads = 5
+    iLISTA_ITENSCLASS = captaINF_CLASS()    
     iCONTADOR = 1
     iTOTAL_ITENS = len(iLISTA_ITENSCLASS)
     with concurrent.futures.ThreadPoolExecutor(max_threads) as executor:
         futures = []
         for itens in iLISTA_ITENSCLASS:
             iCONTADOR += 1
-            gera_Log(f"Enviando: {iCONTADOR} de {iTOTAL_ITENS} ")
             future = executor.submit(enviaSCANNTECH, itens[0], itens[1], itens[2], itens[3], itens[4],
                                      itens[5], itens[6], itens[7], itens[8], itens[9], itens[10], itens[11], iCONTADOR)
             futures.append(future)
@@ -199,5 +196,4 @@ def geraENVIO_CLASMERC():
             except Exception as e:
                 print(f"Erro na thread: {e}")
 
-# Chamada da funcao para gerar o envio das classes mercadologicas
 geraENVIO_CLASMERC()

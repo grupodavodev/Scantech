@@ -1,6 +1,6 @@
 #05.07.22 - Consulta e cadastro de depositos-lojas na scantech
 #contato scantech Rafael - orientacoes em 04-07-22
-#https://scanntech.cloud.xwiki.com/xwiki/wiki/di/view/apis/api-stock/
+#https://scanntech.cloud.xwiki.com/xwiki/wiki/di/view/apis/api-stock/operations/warehouses/
 
 import cx_Oracle
 import os
@@ -33,7 +33,7 @@ if os.name == 'nt':
 else:
     os.environ['ORACLE_HOME'] =   os.getenv("iORACLEHOME_LINUX") 
     dirLOGREQUEST = os.getenv("iDIRLOG_LINUX") 
-iNAMEARQLOG = os.getenv("iNOMEARQLOG") 
+iNAMEARQLOG = os.getenv("iNOMEARQLOG_CADDEP") 
 iEXTENSAO_LOG = os.getenv("iEXTENSAO_LOG") 
 logging.basicConfig(
     filename=f"{dirLOGREQUEST}{iNAMEARQLOG}_{datetime.now().strftime('%d%m%Y')}{iEXTENSAO_LOG}",  # Nome do arquivo de log
