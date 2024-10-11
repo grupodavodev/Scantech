@@ -1,0 +1,34 @@
+De: rsousa@scanntech.com <rsousa@scanntech.com> 
+Enviada em: sexta-feira, 8 de julho de 2022 17:35
+Para: Wesley Adriano Pinheiro <wapinhe@davo.com.br>
+Assunto: DI | Acceso producción api-stock & api-products - di-davo-5fk2
+
+Wesley, boa tarde.
+Tudo bem?
+
+Segue dados de produção para evoluirmos, sugiro ativarmos uma loja estando tudo ok vamos para as demais pode ser?
+
+URL Base: 
+- http://parceiro.scanntech.com
+Documentación Swagger: 
+- http://parceiro.scanntech.com/api-stock/swagger-ui.html
+- http://parceiro.scanntech.com/api-products/swagger-ui.html
+Usuario: di-davo-5fk2 
+Contraseña: #f1-E1hL 
+
+CNPJ	Nombre Fantasia	Company-id	Store-id
+52130481000749	DAVO HIPER LJ07	39061	7
+52130481000153	DAVO HIPER LJ01	39061	1
+52130481000234	DAVO HIPER LJ02	39061	2
+52130481000315	DAVO HIPER LJ03	39061	3
+52130481000404	DAVO HIPER LJ04	39061	4
+52130481000587	DAVO HIPER LJ05	39061	5
+52130481000668	DAVO HIPER LJ06	39061	6
+52130481001206	DAVO HIPER LJ12	39061	12
+52130481001397	DAVO HIPER 13	39061	13
+52130481002105	DAVO HIPER 21	39061	21
+52130481002520	POUPAKI PENHA LJ25	39061	25
+52130481002873	POUPAKI GUARULHOS LJ28	39061	28
+
+
+Atenciosamente,
